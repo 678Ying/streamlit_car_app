@@ -1,27 +1,44 @@
 import streamlit as st
 import pandas as pd
 
-df = pd.read_csv('car_data.csv') # Ensure the CSV file is in your project folder
+# Set the file path for car_data.csv
+file_path = 'car_data.csv'
 
-# Sidebar filters
-st.sidebar.header('Filters')
-car_name = st.sidebar.text_input('Car Name', '')
-transmission = st.sidebar.multiselect('Transmission', df['Transmission'].unique(), default=df['Transmission'].unique())
-selling_price_range = st.sidebar.slider('Selling Price Range', int(df['Selling_Price'].min()), int(df['Selling_Price'].max()), (0, 20))
-year_range = st.sidebar.slider('Year Range', int(df['Year'].min()), int(df['Year'].max()), (2000, 2024))
+# Attempt to load the dataset
+try:
+    data = pd.read_csv(file_path)
+except FileNotFoundError:
+    st.error('car_data.csv file not found. Please make sure it is located in the correct directory.')
+    st.stop()
 
-# Main app
-if st.sidebar.button('Submit'):
-    # Filter data
-    filtered_df = df
+def filter_data(car_name, transmission_type, selling_price_range, year_range):
+    filtered_data = data
     if car_name:
-        filtered_df = filtered_df[filtered_df['Car_Name'].str.contains(car_name, case=False)]
-    filtered_df = filtered_df[filtered_df['Transmission'].isin(transmission)]
-    filtered_df = filtered_df[(filtered_df['Selling_Price'] >= selling_price_range[0]) & (filtered_df['Selling_Price'] <= selling_price_range[1])]
-    filtered_df = filtered_df[(filtered_df['Year'] >= year_range[0]) & (filtered_df['Year'] <= year_range[1])]
-    
-    # Display filtered data
-    st.dataframe(filtered_df)
+        # Corrected from Car_Name to car_name
+        filtered_data = filtered_data[filtered_data['Car_Name'].str.contains(car_name, case=False)]
+    if transmission_type:
+        filtered_data = filtered_data[filtered_data['Transmission'].isin(transmission_type)]
+    filtered_data = filtered_data[
+        (filtered_data['Selling_Price'] >= selling_price_range[0]) &
+        (filtered_data['Selling_Price'] <= selling_price_range[1])
+    ]
+    filtered_data = filtered_data[
+        (filtered_data['Year'] >= year_range[0]) &
+        (filtered_data['Year'] <= year_range[1])
+    ]
+    return filtered_data
+
+# Sidebar for input filters
+st.sidebar.header('Filter Options')
+car_name = st.sidebar.text_input('Car Name')
+transmission_type = st.sidebar.multiselect('Transmission Type', ['Manual', 'Automatic'], default=['Manual', 'Automatic'])
+selling_price_range = st.sidebar.slider('Selling Price Range', 0, 20, (0, 20))
+year_range = st.sidebar.slider('Year Range', 2000, 2024, (2000, 2024))
+
+# Filter data when the user clicks the 'Submit' button
+if st.sidebar.button('Submit'):
+    filtered_data = filter_data(car_name, transmission_type, selling_price_range, year_range)
+    st.write(filtered_data)
 else:
-    # Display original data
-    st.dataframe(df)
+    # If 'Submit' is not clicked, display the original data
+    st.write(data)
